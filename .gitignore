@@ -1,0 +1,4 @@
+ct_complaints.db
+backend/complaints.db
+backend/__pycache__
+frontend/node_modules
