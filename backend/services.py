@@ -1,6 +1,7 @@
 # services.py
 import requests
 import json
+import os
 from sqlalchemy import func, extract
 from sqlalchemy.orm import Session
 from models import Complaint
@@ -74,24 +75,26 @@ def get_prompt_for_classification(complaint):
 
        - Gantry: 与CT扫描仪的机架部分相关的问题  
        - Couch: 与患者床/台以及附件相关的问题  
-       - Software: 与扫描控制，用户操作，图像浏览及处理软件功能相关的问题  
-       - CIRS: 与图像重建，重建性能或包含CIRS/Recon字样的相关的问题
+       - Console: 与扫描操作，图像获取，服务工具等用户在主控台上操作相关的问题
+       - Application: 与图像浏览，图像处理，能谱结果，临床应用软件以及胶片打印，报告功能相关的问题  
+       - CIRS: 与图像重建, 重建性能或包含CIRS/Recon字样的相关的问题
        - Image Quality: 与图像质量相关的问题  
        - IC: 与CT球管和高压相关的问题
-       - DMS: 与CT探测器以及模块更换相关的问题
+       - DMS: 与CT探测器, 检测器, 以及模块更换相关的问题
        - PC Hardware: 与计算机硬件相关的问题，如鼠标，键盘，显示器，硬盘等  
        - Enhancement: 功能增强请求  
        - Not a complaint: 不是投诉  
     
     2. 失效模式 (严格按照下面分类选择其中一项，不要发明新的分类名称):  
-       - FM1-System Down: 系统完全无法工作  
-       - FM2-Fail to scan: 无法进行扫描  
-       - FM3-Fail to generate images: 无法生成图像  
+       - FM1-System Down: 系统宕机，完全无法工作，用户无法自行恢复，需要服务工程师现场解决  
+       - FM2-Fail to scan: 扫描失败，或无法进行扫描  
+       - FM3-Fail to generate images: 无法生成图像，或生成图像数量上不完整  
        - FM4-Image Quality: 图像质量问题  
        - FM5-Fail to initialize/operation: 初始化或操作失败  
        - FM6-Fail to provide correct information: 无法提供正确信息  
-       - FM7-DICOM/Interoperability: DICOM或互操作性问题  
-       - FM8-Usability: 可用性问题  
+       - FM7-DICOM/Interoperability: DICOM, 图像传输或互操作性问题  
+       - FM8-Usability: 可用性问题 
+       - Enhancement: 功能增强请求 
        - Not a failure: 不是失效  
     
     3. 严重程度 (严格按照下面分类选择其中一项，不要发明新的分类名称):  
@@ -123,7 +126,7 @@ def get_prompt_for_classification(complaint):
            - Accessory: 头托，延长板，床垫，绑带，脚踏开关等相关问题  
            - Motion Control: 床运动控制相关问题  
            - Noise: 噪声问题
-           - Cable: 电缆相关问题,比如PIM，Encoder电缆等  
+           - Cable: 电缆相关问题,比如PIM, Encoder电缆等  
            - Servo: 伺服相关问题
            - PCBA: PCBA相关问题
            - User Experience: 用户体验相关问题
@@ -136,28 +139,51 @@ def get_prompt_for_classification(complaint):
             - Stuck: 卡死
             - Other: 其他问题
             
-        - Software:  
+        - Console:  
            - Configuration: 系统设置(协议, DICOM, 时间）配置相关问题  
            - DICOM/Connectivity: DICOM/PACS/RIS/HIS 图像传输及Worklist/MPPS相关问题  
            - ExamCard: 扫描协议/EC相关问题
            - Usability: 可用性相关问题  
+           - Camera: 摄像头相关问题
            - Security: 信息安全相关问题  
            - Bolus Tracking: Bolus Tracking, 对比剂增强扫描触发相关问题  
            - Film/Report: 打印胶片或报告相关问题  
            - IVC: IVC软件问题
-           - BSOD/Crash: BSOD/蓝屏及系统崩溃相关问题
+           - Crash: BSOD/蓝屏及系统崩溃相关问题
            - Stuck/Slowness: 系统卡死、速度慢相关问题
            - Restart: 重启问题
            - Dose: 放射剂量相关问题
+           - I18N/L10N: 翻译，多语言，本地化相关问题
            - Application: 应用程序问题, 特别的图像处理相关的应用程序，比如MPR, VR, 3D, CTA等
            - Tools: 服务工具类问题
            - Other: 其他问题
+           
+        - Application:
+            - Image Viewer: 图像显示相关问题
+            - MPR: MPR相关问题
+            - VR: VR, 3D相关问题
+            - Direct Result: 直接结果相关问题, 通常投诉中含有DirectResult字样
+            - Spectral: Spectral相关问题
+            - Camera: 摄像头工作流相关问题
+            - DICOM: DICOM相关问题
+            - Stuck/Slowness: 速度慢问题
+            - Crash: 程序崩溃问题
+            - Film: 胶片打印相关问题
+            - Report: 报告打印相关问题
+            - I18N/L10N: 翻译，多语言，本地化相关问题
+            - Other: 其他问题
+            
         - Image Quality:  
            - Calibration: 校正问题，重新校正可恢复  
+           - Blurring: 图像模糊
+           - Motion Artifact: 运动伪影
+           - Strike Artifact: 条形伪影
+           - Ring Artifact: 圆环伪影
+           - Noise: 高图像噪声相关问题
            - Dose: 放射剂量相关问题  
            - Preview IQ: 预览图像质量问题  
            - Poor IQ: 整体图像质量问题，笼统的图像质量抱怨
-           - Artifact: 图像伪影
+           - Artifact: 笼统图像伪影，未具体指明
            - DMS Module: DMS模块问题
            - Other: 其他问题
         - DMS:
@@ -180,92 +206,108 @@ def get_prompt_for_classification(complaint):
     return prompt  
 
 def classify_complaint(complaint, db: Session):  
-    """使用Ollama对投诉进行分类"""  
-    prompt = get_prompt_for_classification(complaint)  
-    # 调用本地Ollama API  
-    response = requests.post(  
-        "http://130.147.128.192:11434/api/generate",  
-        json={  
-            "model": "deepseek-r1:14b",  # 或根据您部署的模型修改  
-            "prompt": prompt,  
-            "stream": False  
-        }  
-    )  
+    """使用LLM API对投诉进行分类"""  
+    # 从环境变量获取LLM服务器URL和模型信息
+    llm_server_url = os.environ.get("LLM_SERVER_URL", "http://130.147.128.192:11434/api/generate")
+    llm_model_name = os.environ.get("LLM_MODEL_NAME", "deepseek-r1:14b")
     
-    if response.status_code == 200:  
-        result = response.json()  
-        response_text = result.get("response", "")  
+    # 记录日志，便于调试
+    # print(f"Using LLM server: {llm_server_url}")
+    # print(f"Using LLM model: {llm_model_name}")
+    
+    prompt = get_prompt_for_classification(complaint)
+    
+    try:
+        # 调用LLM API
+        response = requests.post(
+            llm_server_url,
+            json={
+                "model": llm_model_name,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60  # 设置超时时间为60秒
+        )
+        
+        if response.status_code == 200:  
+            result = response.json()  
+            response_text = result.get("response", "")  
 
-        # 尝试从响应中提取JSON  
-        try:  
-            # 查找JSON部分  
-            print(f"Complaint: {complaint.pr_id} {complaint.short_description}")
-            start_rational = response_text.find('<think>')+7
-            end_rational = response_text.rfind('</think>')
-            rational = response_text[start_rational:end_rational]
-            start_idx = response_text.find('{', end_rational)  
-            end_idx = response_text.rfind('}') + 1  
-            print(rational)
-            if start_idx >= 0 and end_idx > 0:  
-                json_str = response_text[start_idx:end_idx]  
-                print(json_str)
-                try:
-                    classification = json.loads(json_str)  
-                    
-                    # 更新投诉记录  
-                    complaint.system_component = classification.get("system_component")  
-                    complaint.failure_mode = classification.get("failure_mode")  
-                    complaint.severity = classification.get("severity")  
-                    complaint.priority = classification.get("priority")  
-                    
-                    level2 = str(classification.get("level2"))
-                    
-                    complaint.level2 = level2
-                except:
-                    print('multi-classification start')
-                    system_component = ''
-                    failure_mode = ''
-                    severity = ''
-                    priority = ''
-                    level2 = ''
-                    brack_start = 0
-                    brack_end = json_str.find('}', brack_start)+1
-                    print("initializing")
-                    while(brack_end != -1 and brack_start != -1):
-                        print(f"starting {brack_start}-{brack_end}")
-                        sub_json = json_str[brack_start:brack_end]
-                        print(sub_json)
-                        brack_start = json_str.find('{', brack_end)
-                        brack_end = json_str.find('}', brack_start)+1
-                        sub_classification = json.loads(sub_json)
-                        print(sub_classification)
-                        system_component = sub_classification.get("system_component") 
-                        failure_mode = sub_classification.get("failure_mode")
-                        if(brack_end == -1):
-                            system_component += '|'
-                            failure_mode += '|'
-                            print("continue sub_classification")
-                        severity = sub_classification.get("severity")
-                        priority = sub_classification.get("priority")
-                         
-                        level2 = sub_classification.get("level2")
+            # 尝试从响应中提取JSON  
+            try:  
+                # 查找JSON部分  
+                print(f"Complaint: {complaint.pr_id} {complaint.short_description}")
+                start_rational = response_text.find('<think>')+7
+                end_rational = response_text.rfind('</think>')
+                rational = response_text[start_rational:end_rational]
+                start_idx = response_text.find('{', end_rational)  
+                end_idx = response_text.rfind('}') + 1  
+                print(rational)
+                if start_idx >= 0 and end_idx > 0:  
+                    json_str = response_text[start_idx:end_idx]  
+                    print(json_str)
+                    try:
+                        classification = json.loads(json_str)  
                         
-                    complaint.system_component = system_component
-                    complaint.failure_mode = str(failure_mode)
-                    complaint.severity = str(severity)
-                    complaint.priority = str(priority)
-                    complaint.level2 = str(level2)
-                    print("multiple classification")
-                complaint.rational = rational    
-                complaint.updated_at = func.now()  
-                
-                db.commit()  
-                return True  
-        except Exception as e:  
-            print(f"解析分类结果时出错: {e} {e.__cause__}")  
-            traceback.print_exc()  
+                        # 更新投诉记录  
+                        complaint.system_component = classification.get("system_component")  
+                        complaint.failure_mode = classification.get("failure_mode")  
+                        complaint.severity = classification.get("severity")  
+                        complaint.priority = classification.get("priority")  
+                        
+                        level2 = str(classification.get("level2"))
+                        
+                        complaint.level2 = level2
+                    except:
+                        print('multi-classification start')
+                        system_component = ''
+                        failure_mode = ''
+                        severity = ''
+                        priority = ''
+                        level2 = ''
+                        brack_start = 0
+                        brack_end = json_str.find('}', brack_start)+1
+                        print("initializing")
+                        while(brack_end != -1 and brack_start != -1):
+                            print(f"starting {brack_start}-{brack_end}")
+                            sub_json = json_str[brack_start:brack_end]
+                            print(sub_json)
+                            brack_start = json_str.find('{', brack_end)
+                            brack_end = json_str.find('}', brack_start)+1
+                            sub_classification = json.loads(sub_json)
+                            print(sub_classification)
+                            system_component = sub_classification.get("system_component") 
+                            failure_mode = sub_classification.get("failure_mode")
+                            if(brack_end == -1):
+                                system_component += '|'
+                                failure_mode += '|'
+                                print("continue sub_classification")
+                            severity = sub_classification.get("severity")
+                            priority = sub_classification.get("priority")
+                             
+                            level2 = sub_classification.get("level2")
+                            
+                        complaint.system_component = system_component
+                        complaint.failure_mode = str(failure_mode)
+                        complaint.severity = str(severity)
+                        complaint.priority = str(priority)
+                        complaint.level2 = str(level2)
+                        print("multiple classification")
+                    complaint.rational = rational    
+                    complaint.updated_at = func.now()  
+                    
+                    db.commit()  
+                    return True  
+            except Exception as e:  
+                print(f"解析分类结果时出错: {e} {e.__cause__}")  
+                traceback.print_exc()
+        else:
+            print(f"LLM API请求失败: {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"调用LLM服务器时出错: {e}")
+        traceback.print_exc()
     
-    return False  
+    return False
 
 def get_statistics(db: Session, filters=None):  
     """获取分类统计信息"""

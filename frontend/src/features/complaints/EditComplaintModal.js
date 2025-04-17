@@ -190,7 +190,8 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
                   <option value="">Please select...</option>  
                   <option value="Gantry">Gantry</option>  
                   <option value="Couch">Couch</option>  
-                  <option value="Software">Software</option>  
+                  <option value="Console">Console</option>  
+                  <option value="Application">Applicatoin</option>  
                   <option value="CIRS">CIRS</option>  
                   <option value="Image Quality">Image Quality</option>  
                   <option value="IC">IC</option>  
@@ -232,6 +233,8 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
                   <option value="FM6-Fail to provide correct information">FM6-Fail to provide correct information</option>  
                   <option value="FM7-DICOM/Interoperability">FM7-DICOM/Interoperability</option>  
                   <option value="FM8-Usability">FM8-Usability</option>  
+                  <option value="Enhancement">Enhancement</option>  
+                  <option value="Not a failure">Not a failure</option>  
                 </select>  
               </div>  
 
