@@ -88,16 +88,44 @@ export async function updateComplaintClassification(prId, classificationData) {
 }
 
 // AI分类单个投诉
-export async function aiClassifyComplaint(prId) {
+export async function aiClassifyComplaint(prId, modelName = null) {
+  const payload = modelName ? { model_name: modelName } : {};
   const response = await fetch(`${API_URL}/complaints/${prId}/classify`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-    }
+    },
+    body: JSON.stringify(payload)
   });
   
   if (!response.ok) {
     throw new Error("AI classification failed");
+  }
+  return response.json();
+}
+
+// 启动批量自动分类
+export async function startAutoClassification(modelName = null) {
+  const payload = modelName ? { model_name: modelName } : {};
+  const response = await fetch(`${API_URL}/auto-classification/start`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  if (!response.ok) {
+    throw new Error("Failed to start auto classification");
+  }
+  return response.json();
+}
+
+// 获取自动分类进度
+export async function getAutoClassificationProgress() {
+  const response = await fetch(`${API_URL}/auto-classification/progress`);
+  if (!response.ok) {
+    throw new Error("Failed to get classification progress");
   }
   return response.json();
 }
@@ -179,6 +207,30 @@ export async function fetchProductStatistics(filters = {}) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Failed to fetch product statistics");
+  }
+  return response.json();
+}
+
+// 获取相似投诉
+export async function fetchSimilarComplaints(prId, limit = 5) {
+  const url = new URL(`${API_URL}/similar-complaints/${prId}`);
+  
+  // Add limit parameter to control the number of results
+  url.searchParams.append('limit', limit);
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Failed to fetch similar complaints");
+  }
+  return response.json();
+}
+
+// 获取可用的模型列表
+export async function fetchAvailableModels() {
+  const url = `${API_URL}/available-models`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Failed to fetch available models");
   }
   return response.json();
 }

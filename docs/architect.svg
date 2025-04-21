@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <!-- 背景和标题 -->
+  <rect width="800" height="600" fill="#f9f9f9"/>
+  <text x="400" y="40" font-family="Arial" font-size="24" text-anchor="middle" font-weight="bold">CT投诉分析系统架构图</text>
+  
+  <!-- 前端部分 -->
+  <rect x="50" y="80" width="700" height="120" rx="10" fill="#e6f7ff" stroke="#1890ff" stroke-width="2"/>
+  <text x="400" y="110" font-family="Arial" font-size="18" text-anchor="middle" font-weight="bold">前端 (React)</text>
+  
+  <!-- 前端组件 -->
+  <rect x="100" y="130" width="120" height="50" rx="5" fill="#ffffff" stroke="#1890ff" stroke-width="1"/>
+  <text x="160" y="160" font-family="Arial" font-size="12" text-anchor="middle">投诉列表页面</text>
+  
+  <rect x="240" y="130" width="120" height="50" rx="5" fill="#ffffff" stroke="#1890ff" stroke-width="1"/>
+  <text x="300" y="160" font-family="Arial" font-size="12" text-anchor="middle">投诉编辑模态框</text>
+  
+  <rect x="380" y="130" width="120" height="50" rx="5" fill="#ffffff" stroke="#1890ff" stroke-width="1"/>
+  <text x="440" y="160" font-family="Arial" font-size="12" text-anchor="middle">自动分类页面</text>
+  
+  <rect x="520" y="130" width="120" height="50" rx="5" fill="#ffffff" stroke="#1890ff" stroke-width="1"/>
+  <text x="580" y="160" font-family="Arial" font-size="12" text-anchor="middle">数据统计仪表盘</text>
+  
+  <!-- 后端部分 -->
+  <rect x="50" y="220" width="700" height="180" rx="10" fill="#f0f5ff" stroke="#2f54eb" stroke-width="2"/>
+  <text x="400" y="250" font-family="Arial" font-size="18" text-anchor="middle" font-weight="bold">后端 (FastAPI)</text>
+  
+  <!-- 后端组件 -->
+  <rect x="70" y="280" width="180" height="50" rx="5" fill="#ffffff" stroke="#2f54eb" stroke-width="1"/>
+  <text x="160" y="310" font-family="Arial" font-size="12" text-anchor="middle">API路由与端点 (main.py)</text>
+  
+  <rect x="70" y="340" width="180" height="50" rx="5" fill="#ffffff" stroke="#2f54eb" stroke-width="1"/>
+  <text x="160" y="370" font-family="Arial" font-size="12" text-anchor="middle">数据库模型 (models.py)</text>
+  
+  <rect x="270" y="280" width="180" height="50" rx="5" fill="#ffffff" stroke="#2f54eb" stroke-width="1"/>
+  <text x="360" y="310" font-family="Arial" font-size="12" text-anchor="middle">分类服务 (services.py)</text>
+  
+  <rect x="270" y="340" width="180" height="50" rx="5" fill="#ffffff" stroke="#2f54eb" stroke-width="1"/>
+  <text x="360" y="370" font-family="Arial" font-size="12" text-anchor="middle">相似投诉搜索 (services.py)</text>
+  
+  <rect x="470" y="310" width="180" height="50" rx="5" fill="#ffd591" stroke="#fa8c16" stroke-width="2"/>
+  <text x="560" y="340" font-family="Arial" font-size="12" text-anchor="middle" font-weight="bold">大语言模型集成</text>
+  
+  <!-- 模型与集成部分 -->
+  <rect x="50" y="420" width="700" height="140" rx="10" fill="#f6ffed" stroke="#52c41a" stroke-width="2"/>
+  <text x="400" y="450" font-family="Arial" font-size="18" text-anchor="middle" font-weight="bold">模型与外部服务集成</text>
+  
+  <rect x="100" y="480" width="140" height="50" rx="5" fill="#ffffff" stroke="#52c41a" stroke-width="1"/>
+  <text x="170" y="510" font-family="Arial" font-size="12" text-anchor="middle">Ollama LLM服务</text>
+  
+  <rect x="260" y="480" width="140" height="50" rx="5" fill="#ffffff" stroke="#52c41a" stroke-width="1"/>
+  <text x="330" y="510" font-family="Arial" font-size="12" text-anchor="middle">嵌入模型服务</text>
+  
+  <rect x="420" y="480" width="140" height="50" rx="5" fill="#ffffff" stroke="#52c41a" stroke-width="1"/>
+  <text x="490" y="510" font-family="Arial" font-size="12" text-anchor="middle">数据库 (SQLAlchemy)</text>
+  
+  <rect x="580" y="480" width="140" height="50" rx="5" fill="#ffffff" stroke="#52c41a" stroke-width="1"/>
+  <text x="650" y="510" font-family="Arial" font-size="12" text-anchor="middle">嵌入缓存</text>
+
+  <!-- 连接线 -->
+  <!-- 前端到后端的主要连接 -->
+  <line x1="400" y1="200" x2="400" y2="220" stroke="#8c8c8c" stroke-width="2" stroke-dasharray="5,5"/>
+  
+  <!-- 后端服务到外部集成的连接 -->
+  <line x1="360" y1="390" x2="360" y2="420" stroke="#8c8c8c" stroke-width="2" stroke-dasharray="5,5"/>
+  <line x1="560" y1="360" x2="560" y2="420" stroke="#fa8c16" stroke-width="2" stroke-dasharray="5,5"/>
+  
+  <!-- 服务内部连接 -->
+  <line x1="250" y1="305" x2="270" y2="305" stroke="#2f54eb" stroke-width="1.5"/>
+  <line x1="250" y1="365" x2="270" y2="365" stroke="#2f54eb" stroke-width="1.5"/>
+  <line x1="450" y1="305" x2="470" y2="325" stroke="#fa8c16" stroke-width="1.5"/>
+  <line x1="450" y1="365" x2="470" y2="345" stroke="#fa8c16" stroke-width="1.5"/>
+  
+  <!-- 模型集成连接 -->
+  <line x1="170" y1="480" x2="360" y2="390" stroke="#52c41a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="330" y1="480" x2="360" y2="390" stroke="#52c41a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="560" y1="390" x2="560" y2="480" stroke="#52c41a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="410" y1="365" x2="490" y2="480" stroke="#52c41a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <line x1="360" y1="390" x2="650" y2="480" stroke="#52c41a" stroke-width="1.5" stroke-dasharray="3,3"/>
+  
+  <!-- 图例 -->
+  <rect x="600" y="40" width="15" height="15" fill="#e6f7ff" stroke="#1890ff" stroke-width="1"/>
+  <text x="620" y="52" font-family="Arial" font-size="10">前端组件</text>
+  
+  <rect x="600" y="60" width="15" height="15" fill="#f0f5ff" stroke="#2f54eb" stroke-width="1"/>
+  <text x="620" y="72" font-family="Arial" font-size="10">后端组件</text>
+  
+  <rect x="600" y="80" width="15" height="15" fill="#f6ffed" stroke="#52c41a" stroke-width="1"/>
+  <text x="620" y="92" font-family="Arial" font-size="10">外部集成</text>
+  
+  <rect x="700" y="40" width="15" height="15" fill="#ffd591" stroke="#fa8c16" stroke-width="1"/>
+  <text x="720" y="52" font-family="Arial" font-size="10">LLM集成</text>
+</svg>

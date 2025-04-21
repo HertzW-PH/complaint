@@ -1,0 +1,57 @@
+# Web框架和API
+fastapi>=0.95.0
+uvicorn>=0.21.1
+python-multipart>=0.0.6
+starlette>=0.27.0
+
+# 数据库连接
+sqlalchemy>=2.0.9
+alembic>=1.10.3
+psycopg2-binary>=2.9.5  # PostgreSQL连接器
+pymysql>=1.0.3  # MySQL连接器
+python-dotenv>=1.0.0  # 环境变量管理
+
+# 数据处理和分析
+pandas>=2.0.0
+numpy>=1.24.2
+openpyxl>=3.1.2  # Excel文件支持
+
+# 自然语言处理
+sentence-transformers>=2.2.2  # 用于相似投诉搜索
+transformers>=4.28.1  # Hugging Face变换器库
+torch>=2.0.0  # PyTorch - 用于支持transformers
+scikit-learn>=1.2.2  # 用于数据处理和分析
+
+# HTTP请求
+requests>=2.28.2
+httpx>=0.24.0  # 异步HTTP客户端
+
+# 文本处理
+jieba>=0.42.1  # 中文分词
+langid>=1.1.6  # 语言识别
+markdown>=3.4.3  # Markdown处理
+
+# 安全和认证
+python-jose>=3.3.0  # JWT支持
+passlib>=1.7.4  # 密码哈希
+bcrypt>=4.0.1  # 密码加密
+
+# 日志和监控
+loguru>=0.7.0  # 改进的日志记录
+
+# 测试
+pytest>=7.3.1
+pytest-asyncio>=0.21.0
+
+# 工具
+tqdm>=4.65.0  # 进度条
+pydantic>=1.10.7  # 数据验证
+python-dateutil>=2.8.2  # 日期处理
+
+# 文档
+pyyaml>=6.0  # 配置文件支持
+
+# 可选依赖
+# NLTK>=3.8.1  # 另一种NLP工具库
+# Spacy>=3.5.2  # 另一种NLP工具库
+# gensim>=4.3.1  # 主题建模和文档相似性

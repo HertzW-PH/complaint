@@ -12,7 +12,8 @@ from services import (
     get_filter_options,
     get_monthly_trend,
     get_country_statistics,
-    get_product_statistics
+    get_product_statistics,
+    find_similar_complaints
 )  
 import io  
 import logging  
@@ -126,19 +127,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
                     catalog_item_identifier=str(row.get('Catalog Item Identifier', ''))  
                 )  
                 
-                # Use classification service to classify  
-                # logger.info(f"Classifying PR ID={pr_id}")  
-                # try:  
-                #     classification = classify_complaint(complaint, db)  
-                    
-                #     # Update classification info  
-                #     complaint.system_component = classification.get('system_component')  
-                #     complaint.failure_mode = classification.get('failure_mode')  
-                #     complaint.severity = classification.get('severity')  
-                #     complaint.priority = classification.get('priority')  
-                # except Exception as e:  
-                    # logger.error(f"Classification failed, using default values: {str(e)}", exc_info=True)  
-                    # Set default classification  
                 complaint.system_component = "N/A"  
                 complaint.failure_mode = "N/A"  
                 complaint.severity = "N/A"  
@@ -343,14 +331,24 @@ async def update_complaint(pr_id: str, data: dict, db: Session = Depends(get_db)
     return {"status": "success", "message": "Classification updated"}
 
 @app.post("/complaints/{pr_id}/classify")  
-async def classify_single_complaint(pr_id: str, db: Session = Depends(get_db)):  
+async def classify_single_complaint(
+    pr_id: str, 
+    data: dict = None, 
+    db: Session = Depends(get_db)
+):  
     """Use AI to classify a single complaint"""  
     complaint = db.query(Complaint).filter(Complaint.pr_id == pr_id).first()  
     if not complaint:  
-        raise HTTPException(status_code=404, detail="Complaint record not found")  
+        raise HTTPException(status_code=404, detail="Complaint record not found")
+    
+    # 从请求数据中获取可选的模型名称
+    model_name = None
+    if data and "model_name" in data:
+        model_name = data.get("model_name")
+        logger.info(f"Using specified model for classification: {model_name}")
     
     # Use classification service to classify  
-    success = classify_complaint(complaint, db)  
+    success = classify_complaint(complaint, db, model_name)  
     
     if success:  
         return {  
@@ -369,7 +367,17 @@ async def classify_single_complaint(pr_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Classification failed")
 
 @app.post("/auto-classification/start")  
-def start_auto_classification(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):  
+def start_auto_classification(
+    data: dict = None,
+    background_tasks: BackgroundTasks = BackgroundTasks(), 
+    db: Session = Depends(get_db)
+):  
+    # 从请求数据中获取可选的模型名称
+    model_name = None
+    if data and "model_name" in data:
+        model_name = data.get("model_name")
+        logger.info(f"Using specified model for batch classification: {model_name}")
+    
     def classify_in_background():  
         unclassified_values = ['Unclassified', 'Uncategorized', '未分类', 'N/A', None]
         unclassified_complaints = db.query(Complaint).filter(  
@@ -378,11 +386,11 @@ def start_auto_classification(background_tasks: BackgroundTasks, db: Session = D
         total = len(unclassified_complaints)  
         logger.info(f"Start auto classification, total={total}")  
         for complaint in unclassified_complaints:  
-            classify_complaint(complaint, db)  
+            classify_complaint(complaint, db, model_name=model_name)  
         logger.info("Auto classification completed.")  
-    background_tasks.add_task(classify_in_background)  
-    return {"status": "classification started"}  
     
+    background_tasks.add_task(classify_in_background)  
+    return {"status": "classification started"}
 
 @app.get("/auto-classification/progress")  
 def get_classification_progress(db: Session = Depends(get_db)):  
@@ -495,3 +503,44 @@ async def product_statistics(
         "level2": level2
     }
     return get_product_statistics(db, filters)
+
+@app.get("/similar-complaints/{pr_id}")
+async def get_similar_complaints(pr_id: str, limit: int = Query(5, gt=0, le=20), db: Session = Depends(get_db)):
+    """Find complaints similar to the one with the given PR ID"""
+    logger.info(f"Finding complaints similar to PR ID: {pr_id}, limit: {limit}")
+    
+    # Check if complaint exists
+    complaint = db.query(Complaint).filter(Complaint.pr_id == pr_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Check if similarity search is enabled
+    try:
+        from services import SIMILARITY_SEARCH_ENABLED
+        if not SIMILARITY_SEARCH_ENABLED:
+            logger.warning("Similar complaints feature is disabled due to missing dependencies")
+            return {"error": "Similar complaints feature is currently disabled", "reason": "missing_dependencies"}
+        
+        # Find similar complaints
+        similar = find_similar_complaints(pr_id, db, limit=limit)
+        logger.info(f"Found {len(similar)} similar complaints for PR ID: {pr_id}")
+        return similar
+        
+    except (ImportError, RuntimeError) as e:
+        logger.error(f"Error in similarity search: {str(e)}")
+        return {"error": "Failed to perform similarity search", "reason": str(e)}
+
+@app.get("/available-models")
+async def list_available_models():
+    """获取Ollama服务器上可用的模型列表"""
+    logger.info("Fetching available LLM models")
+    
+    from services import get_available_models
+    result = get_available_models()
+    
+    if result["status"] == "success":
+        logger.info(f"Successfully fetched {len(result['models'])} models")
+    else:
+        logger.warning(f"Failed to fetch models: {result.get('message')}")
+        
+    return result

@@ -1,6 +1,6 @@
 import React, { useState } from "react";  
 import { X, Save, AlertCircle, Cpu, Search } from "lucide-react";  
-import { updateComplaintClassification, aiClassifyComplaint } from "../../utils/api";  
+import { updateComplaintClassification, aiClassifyComplaint, fetchSimilarComplaints } from "../../utils/api";  
 
 export default function EditComplaintModal({ complaint, onClose, onUpdate }) {  
   const [formData, setFormData] = useState({  
@@ -72,18 +72,25 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
     setShowSimilar(true);
     
     try {
-      setTimeout(() => {
-        setSimilarComplaints([
-          { pr_id: "PR12345", similarity: 0.89, short_description: "Similar issue with gantry operation" },
-          { pr_id: "PR54321", similarity: 0.76, short_description: "Related problem in the same component" },
-          { pr_id: "PR67890", similarity: 0.65, short_description: "Another complaint with similar symptoms" }
-        ]);
-        setSearching(false);
-      }, 1500);
+      const similarResults = await fetchSimilarComplaints(complaint.pr_id, 10);
+      setSimilarComplaints(similarResults);
     } catch (err) {
       setError(err.message);
+      setSimilarComplaints([]);
+    } finally {
       setSearching(false);
     }
+  };
+  
+  const handleApplyFromSimilar = (similarComplaint) => {
+    setFormData({
+      system_component: similarComplaint.system_component || formData.system_component,
+      level2: similarComplaint.level2 || formData.level2,
+      failure_mode: similarComplaint.failure_mode || formData.failure_mode,
+      severity: similarComplaint.severity || formData.severity,
+      priority: similarComplaint.priority || formData.priority,
+      rational: formData.rational + `\n\nApplied classification from similar complaint ${similarComplaint.pr_id}.`,
+    });
   };
 
   return (  
@@ -106,7 +113,8 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
         )}  
 
         <div className="flex flex-grow overflow-hidden p-6">  
-          <div className={`${showSimilar ? 'w-1/2' : 'w-2/3'} pr-6 flex flex-col h-full transition-all duration-300`}>  
+          {/* 投诉信息区域 - 默认65%，显示相似投诉时40% */}
+          <div className={`${showSimilar ? 'w-[40%]' : 'w-[65%]'} pr-6 flex flex-col h-full transition-all duration-300`}>  
             <div className="bg-gray-50 p-4 rounded border mb-4 flex-shrink-0">  
               <h4 className="text-sm font-bold text-gray-700 mb-2">Complaint Information</h4>  
               <div className="text-sm text-gray-600 flex">
@@ -128,54 +136,11 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
             <div className="flex flex-col flex-grow">  
               <p className="text-sm font-bold text-gray-700 mb-1">Source Notes:</p>      
                 <textarea className="w-full text-sm p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow resize-none" style={{ whiteSpace: 'pre-wrap' }} readOnly>{complaint.source_notes || "Not Provided"}</textarea>  
-            
             </div>  
           </div>  
 
-          {showSimilar && (
-            <div className="w-1/4 flex flex-col h-full px-4 border-l border-r border-gray-200">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-sm font-bold text-gray-700">Similar Complaints</h4>
-                <button 
-                  onClick={() => setShowSimilar(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              {searching ? (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p className="mt-3 text-sm text-gray-600">Finding similar complaints...</p>
-                </div>
-              ) : similarComplaints.length > 0 ? (
-                <div className="flex-grow overflow-y-auto">
-                  {similarComplaints.map((item) => (
-                    <div key={item.pr_id} className="mb-3 p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition cursor-pointer">
-                      <div className="flex justify-between">
-                        <span className="font-bold text-sm text-blue-600">{item.pr_id}</span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                          {Math.round(item.similarity * 100)}% match
-                        </span>
-                      </div>
-                      <p className="text-sm mt-1 text-gray-600 line-clamp-3">{item.short_description}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                  <Search className="h-8 w-8 mb-2 text-gray-400" />
-                  <p className="text-sm">No similar complaints found</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className={`${showSimilar ? 'w-1/4' : 'w-1/3'} flex flex-col h-full transition-all duration-300`}>  
+          {/* 编辑区域 - 默认35%，显示相似投诉时30% */}
+          <div className={`${showSimilar ? 'w-[30%]' : 'w-[35%]'} flex flex-col h-full transition-all duration-300 ${showSimilar ? 'px-4 border-l border-r' : 'pl-4'} border-gray-200`}>  
             <div className="space-y-3 flex-shrink-0">  
               <div>  
                 <label className="block text-sm font-bold text-gray-700 mb-1">  
@@ -191,7 +156,7 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
                   <option value="Gantry">Gantry</option>  
                   <option value="Couch">Couch</option>  
                   <option value="Console">Console</option>  
-                  <option value="Application">Applicatoin</option>  
+                  <option value="Application">Application</option>  
                   <option value="CIRS">CIRS</option>  
                   <option value="Image Quality">Image Quality</option>  
                   <option value="IC">IC</option>  
@@ -288,6 +253,66 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
               />  
             </div>  
           </div>  
+
+          {/* 相似投诉区域 - 仅在showSimilar为true时显示，占比30% */}
+          {showSimilar && (
+            <div className="w-[30%] flex flex-col h-full">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-bold text-gray-700">Similar Complaints</h4>
+                <button 
+                  onClick={() => setShowSimilar(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              
+              {searching ? (
+                <div className="flex flex-col items-center justify-center h-full border-l border-gray-200 pl-4">
+                  <svg className="animate-spin h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>  
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+                  </svg>  
+                  <p className="mt-3 text-sm text-gray-600">Finding similar complaints...</p>
+                </div>
+              ) : similarComplaints.length > 0 ? (
+                <div className="flex-grow overflow-y-auto border-l border-gray-200 pl-4">
+                  {similarComplaints.map((item) => (
+                    <div 
+                      key={item.pr_id} 
+                      className="mb-3 p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition cursor-pointer"
+                      onClick={() => handleApplyFromSimilar(item)}
+                    >
+                      <div className="flex justify-between">
+                        <span className="font-bold text-sm text-blue-600">{item.pr_id}</span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                          {Math.round(item.similarity * 100)}% match
+                        </span>
+                      </div>
+                      <p className="text-sm mt-1 text-gray-600 line-clamp-3">{item.short_description}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.system_component && (
+                          <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                            {item.system_component}
+                          </span>
+                        )}
+                        {item.failure_mode && (
+                          <span className="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">
+                            {item.failure_mode}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500 border-l border-gray-200 pl-4">
+                  <Search className="h-8 w-8 mb-2 text-gray-400" />
+                  <p className="text-sm">No similar complaints found</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>  
 
         <div className="flex justify-between gap-2 border-t p-4 mt-auto">
@@ -304,7 +329,7 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
                 <>  
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>  
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.962 7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
                   </svg>  
                   AI Analyzing...  
                 </>  
@@ -318,61 +343,53 @@ export default function EditComplaintModal({ complaint, onClose, onUpdate }) {
             
             <button  
               onClick={handleSimilarComplaints}  
-              disabled={searching}  
+              disabled={searching || showSimilar}  
               className={`  
                 px-4 py-2 rounded-md text-sm text-white flex items-center  
-                ${searching ? "bg-teal-400 cursor-not-allowed" : "bg-teal-600 hover:bg-teal-700"}  
+                ${(searching || showSimilar) ? "bg-teal-400 cursor-not-allowed" : "bg-teal-600 hover:bg-teal-700"}  
               `}  
             >  
               {searching ? (  
                 <>  
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>  
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.962 7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
                   </svg>  
                   Searching...  
                 </>  
               ) : (  
                 <>  
                   <Search className="h-4 w-4 mr-1" />  
-                  Similar Complaints  
+                  Find Similar  
                 </>  
               )}  
             </button>
           </div>
-          
-          <div className="flex gap-2">
-            <button  
-              onClick={onClose}  
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"  
-            >  
-              Cancel  
-            </button>  
-            <button  
-              onClick={handleSave}  
-              disabled={saving}  
-              className={`  
-                px-4 py-2 rounded-md text-sm text-white flex items-center  
-                ${saving ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}  
-              `}  
-            >  
-              {saving ? (  
-                <>  
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>  
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 7.962 7.962 7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
-                  </svg>  
-                  Saving...  
-                </>  
-              ) : (  
-                <>  
-                  <Save className="h-4 w-4 mr-1" />  
-                  Save  
-                </>  
-              )}  
-            </button>
-          </div>
-        </div>  
+
+          <button  
+            onClick={handleSave}  
+            disabled={saving}  
+            className={`  
+              px-4 py-2 rounded-md text-sm text-white flex items-center  
+              ${saving ? "bg-gray-400 cursor-not-allowed" : "bg-gray-600 hover:bg-gray-700"}  
+            `}  
+          >  
+            {saving ? (  
+              <>  
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">  
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>  
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>  
+                </svg>  
+                Saving...  
+              </>  
+            ) : (  
+              <>  
+                <Save className="h-4 w-4 mr-1" />  
+                Save  
+              </>  
+            )}  
+          </button>
+        </div>
       </div>  
     </div>  
   );  

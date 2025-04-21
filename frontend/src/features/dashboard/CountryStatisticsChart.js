@@ -17,7 +17,7 @@ export default function CountryStatisticsChart() {
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { filters, filtersApplied, setFiltersApplied } = useFilters();
+  const { filters, filtersApplied } = useFilters();
 
   const loadCountryStats = React.useCallback(async () => {
     try {
