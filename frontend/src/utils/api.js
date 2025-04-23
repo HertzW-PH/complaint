@@ -1,5 +1,5 @@
 // 定义API基础URL
-const API_URL = "http://localhost:8000";
+const API_URL = "http://130.147.129.148:8000";
 
 // 获取统计数据
 export async function fetchStatistics(filters = {}) {
